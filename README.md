@@ -24,13 +24,14 @@
 | # | Глава | Где выполнять |
 |---|---|---|
 | 0 | [Подготовка и сброс](docs/00-prepare.md) | все узлы |
-| 1 | [Сертификаты (CA и TLS)](docs/01-certificates.md) | psql01, затем раздать |
-| 2 | [etcd — распределённое хранилище (DCS)](docs/02-etcd.md) | psql01–03 |
-| 3 | [Узел PostgreSQL: ядро, watchdog, пакеты Patroni](docs/03-node.md) | psql01–03 |
-| 4 | [Patroni](docs/04-patroni.md) | psql01–03 |
-| 5 | [HAProxy](docs/05-haproxy.md) | ha01–02 |
-| 6 | [keepalived и VIP](docs/06-keepalived.md) | ha01–02 |
-| 7 | [Проверки: switchover, failover, отказы](docs/07-tests.md) | везде |
+| 1 | [Установка PostgreSQL 18](docs/01-postgresql.md) | psql01–03 |
+| 2 | [Сертификаты (CA и TLS)](docs/02-certificates.md) | psql01, затем раздать |
+| 3 | [etcd — распределённое хранилище (DCS)](docs/03-etcd.md) | psql01–03 |
+| 4 | [Узел PostgreSQL: ядро, watchdog, пакеты Patroni](docs/04-node.md) | psql01–03 |
+| 5 | [Patroni](docs/05-patroni.md) | psql01–03 |
+| 6 | [HAProxy](docs/06-haproxy.md) | ha01–02 |
+| 7 | [keepalived и VIP](docs/07-keepalived.md) | ha01–02 |
+| 8 | [Проверки: switchover, failover, отказы](docs/08-tests.md) | везде |
 
 Идти строго по порядку: каждая глава опирается на предыдущую и заканчивается проверкой.
 Если проверка не проходит — не идите дальше, сначала разберитесь.
@@ -38,8 +39,8 @@
 ## Исходное состояние
 
 - RHEL 10.2, SELinux включён, firewalld включён, интернета нет.
-- На psql-узлах уже стоит PostgreSQL 18 из PGDG (`postgresql18-server`, `-contrib`),
-  `initdb` не выполнялся; `/var/lib/pgsql` (150G) и `/var/lib/etcd` (5G) — отдельные тома.
+- На тестовом стенде PostgreSQL 18 уже установлен и тома размечены — [глава 1](docs/01-postgresql.md)
+  описывает, как это делается; там её достаточно прочитать и выполнить только проверки.
 - Пакеты, которых нет в зеркале, скачаны вручную (см. [главу 0](docs/00-prepare.md)):
   6 RPM Patroni и архив `etcd-v3.6.15-linux-amd64.tar.gz`.
 

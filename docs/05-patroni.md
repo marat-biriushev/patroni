@@ -1,4 +1,4 @@
-# Глава 4. Patroni
+# Глава 5. Patroni
 
 ## Как это работает
 
@@ -71,7 +71,7 @@ bootstrap:
       parameters:
         wal_level: replica
         hot_standby: "on"
-        io_method: worker          # io_uring в RHEL 10 запрещён ядром (глава 3.6)
+        io_method: worker          # io_uring в RHEL 10 запрещён ядром (глава 4.6)
         max_connections: 200
         shared_buffers: 1900MB     # ~25% RAM
         max_wal_senders: 10

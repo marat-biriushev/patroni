@@ -62,27 +62,14 @@ echo "$ME = $ME_IP"
 
 ## 0.3 Проверить исходное состояние
 
-**На всех psql:**
+**На всех пяти узлах:**
 
 ```bash
-cat /etc/redhat-release                       # RHEL 10.2
-getenforce                                    # Enforcing — SELinux не выключаем
-systemctl is-active firewalld                 # active
-df -h /var/lib/pgsql /var/lib/etcd            # отдельные тома
-rpm -q postgresql18-server postgresql18-contrib   # ...PGDG.rhel10.2
-systemctl is-enabled postgresql-18            # masked — сервер будет запускать Patroni
-ls -ld /var/lib/pgsql/18/data /var/lib/pgsql/18/wal   # пустые, postgres, drwx------
+cat /etc/redhat-release              # RHEL 10.2
+getenforce                           # Enforcing — SELinux не выключаем
+systemctl is-active firewalld        # active
 free -g; nproc
-```
-
-Почему `postgresql-18.service` замаскирован: PostgreSQL на этих узлах будет запускать **только**
-Patroni. Если кто-то по привычке сделает `systemctl start postgresql-18`, на узле окажется
-второй postmaster в обход Patroni — прямой путь к двум primary.
-
-Если каталогов `data`/`wal` нет:
-
-```bash
-install -d -o postgres -g postgres -m 0700 /var/lib/pgsql/18/data /var/lib/pgsql/18/wal
+dnf -q repolist                      # BaseOS, AppStream — подключены (Satellite)
 ```
 
 ## 0.4 Разложить офлайн-файлы
@@ -110,4 +97,4 @@ ls -l /root/offline /root/offline/rpms
 ## ✅ Проверка главы
 
 - `source /root/cluster.env` печатает правильные `ME`/`ME_IP` на всех пяти узлах.
-- На psql-узлах: PostgreSQL 18 установлен, сервис замаскирован, каталоги пустые, офлайн-файлы на месте.
+- На psql-узлах офлайн-файлы на месте.
