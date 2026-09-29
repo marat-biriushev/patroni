@@ -55,7 +55,7 @@ Patroni при остановке гасит PostgreSQL и **снимает кл
 
 ```bash
 # на текущем лидере
-pkill -9 -f /usr/bin/patroni; pkill -9 -f /usr/pgsql-18/bin/postgres
+pkill -9 -u postgres        # все процессы postgres: и Patroni, и PostgreSQL
 ```
 
 Теперь новый лидер появится только через `ttl` (до 30 с), когда истечёт ключ в etcd.
@@ -121,6 +121,25 @@ patronictl restart $SCOPE --pending           # перезапустить то�
 ```
 
 Правка `bootstrap.dcs` в `patroni.yml` после инициализации **ни на что не влияет** — частая ошибка.
+
+## Замеры на тестовом стенде
+
+| Тест | Простой записи | Что видно в окне 2 |
+|---|---|---|
+| 8.1 switchover | ~8 с | обрыв, затем `read-only transaction`, пока HAProxy не заметил смену (`inter 3s fall 3`) |
+| 8.2 `systemctl stop patroni` на лидере | ~9 с | `server closed the connection` — HAProxy некуда отправлять запросы |
+| 8.3 `kill -9` на лидере | ~35 с | ключ лидера живёт до `ttl` (30 с) + реакция HAProxy |
+
+В 8.3 узел перезагрузился через ~25 с (watchdog: `ttl 30 − safety_margin 5`). Журнал на узлах
+не постоянный, поэтому факт перезагрузки проверяем так: `uptime; last -x reboot | head -2`.
+После перезагрузки бывший лидер сделал `pg_rewind` (`servers diverged at WAL location …`)
+и вернулся репликой без полной копии данных.
+
+Окно `read-only` в 8.1 сокращается более частыми проверками в секции `primary` HAProxy:
+`default-server inter 1s fall 2 rise 1 on-marked-down shutdown-sessions`.
+
+Пропуски в `id` после смены лидера — не потеря данных: последовательности пишут значения в WAL
+наперёд. Проверка, что подтверждённые записи на месте: `select count(*), max(id) from ha_test`.
 
 ## Что должно остаться в голове
 

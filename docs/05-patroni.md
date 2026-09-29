@@ -111,6 +111,9 @@ postgresql:
   pg_hba:
     - local all all peer
     - host all all 127.0.0.1/32 scram-sha-256
+    # Patroni подключается к СВОЕМУ PostgreSQL по протоколу репликации (узнать timeline
+    # и LSN перед pg_rewind). Без этой строки бывший лидер после аварии не встанет в строй.
+    - host replication replicator 127.0.0.1/32 scram-sha-256
     # репликация и pg_rewind между узлами БД
     - host replication replicator $PSQL1_IP/32 scram-sha-256
     - host replication replicator $PSQL2_IP/32 scram-sha-256
