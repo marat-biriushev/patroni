@@ -22,7 +22,10 @@ cd /root/offline
 tar xzf etcd-v3.6.15-linux-amd64.tar.gz
 install -m 0755 etcd-v3.6.15-linux-amd64/{etcd,etcdctl,etcdutl} /usr/local/bin/
 restorecon -v /usr/local/bin/etcd*          # правильная метка SELinux (bin_t)
-/usr/local/bin/etcd --version
+# Ссылки в /usr/bin: профиль root на узлах может переопределять PATH без /usr/local/bin
+ln -sf /usr/local/bin/etcdctl /usr/bin/etcdctl
+ln -sf /usr/local/bin/etcdutl /usr/bin/etcdutl
+etcd --version 2>/dev/null || /usr/local/bin/etcd --version
 ```
 
 `install`, а не `mv`: файл создаётся заново и получает метку SELinux каталога назначения.
