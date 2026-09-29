@@ -22,7 +22,7 @@ cd /root/offline
 tar xzf etcd-v3.6.15-linux-amd64.tar.gz
 install -m 0755 etcd-v3.6.15-linux-amd64/{etcd,etcdctl,etcdutl} /usr/local/bin/
 restorecon -v /usr/local/bin/etcd*          # правильная метка SELinux (bin_t)
-etcd --version
+/usr/local/bin/etcd --version
 ```
 
 `install`, а не `mv`: файл создаётся заново и получает метку SELinux каталога назначения.
@@ -148,7 +148,7 @@ journalctl -u etcd -f        # ждём "elected leader" / "became leader at ter
 ```bash
 source /root/cluster.env
 cat > /etc/profile.d/etcdctl.sh <<EOF
-export ETCDCTL_API=3
+export PATH=/usr/local/bin:\$PATH
 export ETCDCTL_ENDPOINTS=https://$PSQL1_IP:2379,https://$PSQL2_IP:2379,https://$PSQL3_IP:2379
 export ETCDCTL_CACERT=/etc/etcd/pki/ca.crt
 EOF
@@ -158,6 +158,10 @@ etcdctl endpoint health
 etcdctl endpoint status -w table
 etcdctl member list -w table
 ```
+
+- `PATH` дополняем, потому что `/usr/local/bin` может не входить в PATH root (hardening-профиль).
+  `\$PATH` экранирован, чтобы в файл попала строка `$PATH`, а не текущее значение.
+- `ETCDCTL_API=3` не нужен: в etcd 3.6 API v2 удалён, и переменная вызывает предупреждение.
 
 Ожидаем: три `is healthy`, ровно один `IS LEADER = true`, одинаковый `RAFT TERM`.
 
