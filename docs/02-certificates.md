@@ -89,10 +89,55 @@ for n in $HA1 $HA2; do
 done
 ```
 
-Если SSH между узлами закрыт — перенесите эти же файлы через свою машину (MobaXterm/WinSCP)
-в `/root/pki/` на каждом узле.
+Если SSH между узлами закрыт (как на нашем стенде) — раздаём одним архивом через Ansible-хост.
+
+На psql01:
+
+```bash
+cd /root/pki
+tar czf /root/pki-bundle.tgz ca.crt $PSQL2.crt $PSQL2.key $PSQL3.crt $PSQL3.key
+```
+
+На Ansible-хосте:
+
+```bash
+ansible -i inventories/test int-res-test-psql01 -b -k -c paramiko \
+  -m fetch -a "src=/root/pki-bundle.tgz dest=$HOME/pki-bundle.tgz flat=yes"
+ansible -i inventories/test 'all:!int-res-test-psql01' -b -k -c paramiko \
+  -m copy -a "src=$HOME/pki-bundle.tgz dest=/root/pki-bundle.tgz mode=0600"
+rm -f $HOME/pki-bundle.tgz            # в архиве закрытые ключи
+```
+
+На psql02/psql03 каждый берёт только своё; на ha-узлах — только CA:
+
+```bash
+source /root/cluster.env; mkdir -p /root/pki && chmod 700 /root/pki
+tar xzf /root/pki-bundle.tgz -C /root/pki ca.crt $ME.crt $ME.key   # psql
+tar xzf /root/pki-bundle.tgz -C /root/pki ca.crt                   # ha
+rm -f /root/pki-bundle.tgz
+```
+
+И удалите архив на psql01: `rm -f /root/pki-bundle.tgz`.
 
 На каждом узле закройте права: `chmod 700 /root/pki; chmod 600 /root/pki/*.key`.
+
+## 2.4 Сроки и продление
+
+| Что | Срок |
+|---|---|
+| CA | 3650 дней (10 лет) |
+| Сертификаты узлов | 825 дней (~2 года 3 месяца) |
+
+Истёкший сертификат узла ломает кластер: узлы etcd перестают доверять друг другу, HAProxy
+перестаёт проходить проверки REST API. Срок нужно мониторить (например, в Zabbix):
+
+```bash
+openssl x509 -enddate -noout -in /etc/etcd/pki/server.crt
+openssl x509 -checkend $((30*86400)) -noout -in /etc/etcd/pki/server.crt || echo "истекает < 30 дней"
+```
+
+Продление — те же команды 2.2 с тем же CA, раскладка новых файлов, перезапуск etcd по одному узлу
+и `systemctl reload patroni`. Клиентам ничего менять не нужно: они доверяют CA, а не сертификату.
 
 ## ✅ Проверка главы
 
